@@ -2,6 +2,13 @@
 
 RegMan frontend is a React 18 SPA built with Vite.
 
+## Quickstart (Clone / Install / Run / Env Vars)
+
+This repo does not duplicate setup instructions.
+
+- Clone + install + run: [README.md](README.md)
+- Required env vars: [README.md](README.md)
+
 ## Folder structure
 
 Key directories under [RegMan.Frontend/src](https://github.com/RegManApp/RegMan.Frontend/tree/main/src):
@@ -40,8 +47,7 @@ See: [src/components/auth](https://github.com/RegManApp/RegMan.Frontend/tree/mai
 
 All HTTP calls use the centralized Axios instance:
 
-- [frontend/RegMan.Frontend/src/api/axiosInstance.js](../frontend/RegMan.Frontend/src/api/axiosInstance.js)
-- [src/api/axiosInstance.js](https://github.com/RegManApp/RegMan.Frontend/blob/main/src/api/axiosInstance.js)
+- https://github.com/RegManApp/RegMan.Frontend/blob/main/src/api/axiosInstance.js
 
 Key behaviors:
 

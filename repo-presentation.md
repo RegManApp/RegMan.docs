@@ -2,6 +2,13 @@
 
 This page is for “production credibility” polish: how to present RegMan on GitHub, in releases, and on LinkedIn without duplicating content.
 
+## Quickstart (Clone / Install / Run / Env Vars)
+
+Canonical setup instructions live in the docs entry point:
+
+- Clone + dependencies + run order: [README.md](README.md)
+- Required environment variables: [README.md](README.md)
+
 ## GitHub repository sidebar (copy/paste)
 
 ### About
@@ -57,7 +64,7 @@ If you don’t want to commit to long-term SemVer promises, keep it simple:
 ### Where to mention migrations
 
 - Release notes: “DB migration required” + name
-- Docs: keep the detailed EF guidance in [docs/backend.md](backend.md)
+- Docs: keep the detailed EF guidance in [backend.md](backend.md)
 
 ## Packages (why it may be empty)
 
@@ -89,10 +96,10 @@ Keep it “decision-maker friendly”:
 
 Put reviewer-grade detail here:
 
-- API endpoint reference: [docs/api.md](api.md)
-- Architecture rationale: [docs/architecture.md](architecture.md)
-- Backend pipeline/auth/migrations: [docs/backend.md](backend.md)
-- Frontend routing/auth/i18n/realtime: [docs/frontend.md](frontend.md)
+- API endpoint reference: [api.md](api.md)
+- Architecture rationale: [architecture.md](architecture.md)
+- Backend pipeline/auth/migrations: [backend.md](backend.md)
+- Frontend routing/auth/i18n/realtime: [frontend.md](frontend.md)
 
 ### Website
 
@@ -120,11 +127,11 @@ Write for impact and outcomes, then link to GitHub.
 
 #### What _not_ to paste into LinkedIn
 
-- Full endpoint lists, DTO schemas, or config blocks → link to [docs/api.md](api.md)
+- Full endpoint lists, DTO schemas, or config blocks → link to [api.md](api.md)
 
 ## Quick links
 
-- API reference: [docs/api.md](api.md)
-- Architecture: [docs/architecture.md](architecture.md)
-- Backend details: [docs/backend.md](backend.md)
-- Frontend details: [docs/frontend.md](frontend.md)
+- API reference: [api.md](api.md)
+- Architecture: [architecture.md](architecture.md)
+- Backend details: [backend.md](backend.md)
+- Frontend details: [frontend.md](frontend.md)

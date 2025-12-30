@@ -2,6 +2,13 @@
 
 RegMan backend is an ASP.NET Core `net8.0` Web API using EF Core + SQL Server.
 
+## Quickstart (Clone / Install / Run / Env Vars)
+
+Canonical setup instructions live in the docs entry point:
+
+- Clone + dependencies + run order: [README.md](README.md)
+- Required environment variables: [README.md](README.md)
+
 ## Startup pipeline
 
 The application is configured in [RegMan.Backend.API/Program.cs](https://github.com/RegManApp/RegMan.Backend/blob/main/RegMan.Backend.API/Program.cs):

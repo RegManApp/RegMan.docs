@@ -2,6 +2,18 @@
 
 This document describes the architecture of RegMan at a level intended for technical reviewers.
 
+## Quickstart (Clone / Install / Run / Env Vars)
+
+Canonical setup instructions live in the docs entry point:
+
+- Clone + dependencies + run order: [README.md](README.md)
+- Required environment variables: [README.md](README.md)
+
+Minimum required env vars to run locally:
+
+- Backend: `ConnectionStrings__DefaultConnection`, `Jwt__Key`
+- Frontend: `VITE_API_BASE_URL`
+
 ## Layering
 
 RegMan is split into three backend layers plus a separate frontend:

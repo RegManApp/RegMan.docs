@@ -2,13 +2,19 @@
 
 This document describes the RegMan HTTP API surface as implemented in the ASP.NET Core controllers.
 
+## Quickstart (Clone / Install / Run / Env Vars)
+
+Canonical local setup instructions live in the docs entry point:
+
+- [README.md](README.md)
+
 ## Conventions
 
 ### Base URL
 
 Configured by environment.
 
-- Local: e.g. `http://localhost:5240`
+- Local: e.g. `http://localhost:5236`
 
 ### Authentication
 
@@ -19,7 +25,7 @@ Most endpoints require JWT.
 
 ### Response envelope
 
-Most endpoints return:
+Most endpoints return an `ApiResponse<T>` envelope. The following JSON is the response example used throughout this document (unless an endpoint explicitly returns something else):
 
 ```json
 {
@@ -240,14 +246,72 @@ When running locally, Swagger UI is available at:
 - Auth: Yes
 - Role: Any authenticated user
 - Description: List course categories.
-- Response: `ApiResponse<IEnumerable<...>>` (category DTO depends on implementation)
+- Response: `ApiResponse<object>`
+- Data shape (example):
+
+```json
+[{ "id": 1, "name": "ComputerScience", "value": "ComputerScience" }]
+```
 
 ### `GET /api/coursecategories/{id}`
 
 - Auth: Yes
 - Role: Any authenticated user
 - Description: Get category by id.
-- Response: `ApiResponse<...>`
+- Response: `ApiResponse<object>`
+- Data shape (example):
+
+```json
+{ "id": 1, "name": "ComputerScience", "value": "ComputerScience" }
+```
+
+---
+
+## Sections
+
+All endpoints require:
+
+- Auth: Yes
+
+### `POST /api/section`
+
+- Role: Admin
+- Description: Create a section.
+- Body: `CreateSectionDTO`
+- Response: `ApiResponse<ViewSectionDTO>`
+
+### `GET /api/section/{id}`
+
+- Role: Admin, Instructor, Student
+- Description: Get section by id.
+- Body: None
+- Response: `ApiResponse<ViewSectionDTO>`
+
+### `GET /api/section?semester={semester}&year={year}&instructorId={id}&courseId={id}&seats={seats}`
+
+- Role: Admin, Instructor, Student
+- Description: Filter sections.
+- Query (all optional):
+  - `semester`
+  - `year` (sent as a date value; only the year component is typically used)
+  - `instructorId`
+  - `courseId`
+  - `seats`
+- Response: `ApiResponse<IEnumerable<ViewSectionDTO>>`
+
+### `PUT /api/section`
+
+- Role: Admin
+- Description: Update a section.
+- Body: `UpdateSectionDTO`
+- Response: `ApiResponse<ViewSectionDTO>`
+
+### `DELETE /api/section/{id}`
+
+- Role: Admin
+- Description: Delete a section.
+- Body: None
+- Response: `ApiResponse<bool>`
 
 ---
 
@@ -644,6 +708,77 @@ SignalR hubs:
 
 ---
 
+## Notifications
+
+All endpoints in this section require:
+
+- Auth: Yes
+- Role: Any authenticated user
+
+### `GET /api/notification?unreadOnly={bool}&page={page}&pageSize={pageSize}`
+
+- Description: Get notifications for the current user.
+- Query:
+  - `unreadOnly` (optional)
+  - `page` (default 1)
+  - `pageSize` (default 20)
+- Response: `ApiResponse<object>`
+- Data shape (example):
+
+```json
+{
+  "notifications": [
+    {
+      "notificationId": 1,
+      "type": "Enrollment",
+      "title": "Enrollment approved",
+      "message": "Your enrollment was approved",
+      "entityType": "Enrollment",
+      "entityId": 123,
+      "isRead": false,
+      "readAt": null,
+      "createdAt": "2026-01-01T10:00:00Z"
+    }
+  ],
+  "totalCount": 10,
+  "unreadCount": 3,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 1
+}
+```
+
+### `GET /api/notification/unread-count`
+
+- Description: Get unread notifications count.
+- Response: `ApiResponse<object>` (data: `{ count }`)
+
+### `POST /api/notification/{id}/read`
+
+- Description: Mark a notification as read.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `POST /api/notification/read-all`
+
+- Description: Mark all notifications as read.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `DELETE /api/notification/{id}`
+
+- Description: Delete a notification.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `DELETE /api/notification/clear-read`
+
+- Description: Delete all read notifications.
+- Body: None
+- Response: `ApiResponse<string>`
+
+---
+
 ## Office Hours
 
 ### Instructor
@@ -830,6 +965,676 @@ SignalR hubs:
 - Role: Public (OAuth callback)
 - Description: OAuth callback configured in Google Console; stores tokens and redirects to safe return URL.
 - Response: `302 Redirect` or `text/plain`
+
+---
+
+## Admin
+
+All endpoints in this section require:
+
+- Auth: Yes
+- Role: Admin
+
+### `GET /api/admin/stats`
+
+- Description: Admin dashboard stats summary (users and enrollments).
+- Body: None
+- Response: `ApiResponse<object>` (see Response envelope example above)
+
+### `GET /api/admin/users`
+
+- Description: Paginated list of users.
+- Query:
+  - `email` (optional)
+  - `role` (optional)
+  - `pageNumber` (default 1)
+  - `pageSize` (default 10)
+- Body: None
+- Response: `ApiResponse<object>` (items + paging fields)
+
+### `GET /api/admin/users/{id}`
+
+- Description: Get a user by id.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `PUT /api/admin/users/{id}`
+
+- Description: Update basic user fields.
+- Body (example):
+
+```json
+{
+  "fullName": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "address": "Cairo"
+}
+```
+
+- Response: `ApiResponse<object>`
+
+### `DELETE /api/admin/users/{id}`
+
+- Description: Delete a user.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `PUT /api/admin/users/{id}/role`
+
+- Description: Change a user role (Admin/Student/Instructor).
+- Body (example):
+
+```json
+{ "newRole": "Instructor" }
+```
+
+- Response: `ApiResponse<string>`
+
+### `POST /api/admin/create-user`
+
+- Description: Create a user with an explicit role (Admin/Student/Instructor). Also creates the role-specific profile.
+- Body: `CreateUserDTO` (shape depends on role; includes `fullName`, `email`, `password`, `role`, and optional profile fields)
+- Response: `ApiResponse<object>`
+
+### `GET /api/admin/students`
+
+- Description: Paginated list of student users.
+- Query:
+  - `search` (optional)
+  - `page` (default 1)
+  - `pageSize` (default 10)
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/admin/students/{id}`
+
+- Description: Get a student user by id.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `PUT /api/admin/students/{id}`
+
+- Description: Update a student user and selected student profile fields.
+- Body: `UpdateStudentDTO`
+- Response: `ApiResponse<object>`
+
+### `DELETE /api/admin/students/{id}`
+
+- Description: Delete a student user.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `GET /api/admin/enrollments`
+
+- Description: Paginated enrollments list for admin review.
+- Query:
+  - `search` (optional)
+  - `status` (optional)
+  - `page` (default 1)
+  - `pageSize` (default 10)
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/admin/students/{studentId}/enrollments`
+
+- Description: Get enrollments for a specific student user id.
+- Body: None
+- Response: `ApiResponse<IEnumerable<ViewEnrollmentDTO>>`
+
+### `GET /api/admin/carts/{studentId}`
+
+- Description: Get a student cart by student user id.
+- Body: None
+- Response: `ApiResponse<ViewCartDTO>`
+
+### `GET /api/admin/students/{studentId}/cart`
+
+- Description: Alias for viewing a student cart.
+- Body: None
+- Response: `ApiResponse<ViewCartDTO>`
+
+### `POST /api/admin/students/{studentId}/force-enroll`
+
+- Description: Force-enroll a student in a section (admin override).
+- Body (example):
+
+```json
+{ "sectionId": 123 }
+```
+
+- Response: `ApiResponse<string>`
+
+### `GET /api/admin/academic-calendar-settings`
+
+- Description: Get the configured academic timeline dates.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `PUT /api/admin/academic-calendar-settings`
+
+- Description: Set the academic timeline dates (registration/withdraw windows).
+- Body (example):
+
+```json
+{
+  "registrationStartDate": "2026-01-05",
+  "registrationEndDate": "2026-01-20",
+  "withdrawStartDate": "2026-01-21",
+  "withdrawEndDate": "2026-02-05"
+}
+```
+
+- Response: `ApiResponse<string>`
+
+### `POST /api/admin/registration-end-date`
+
+- Description: Convenience endpoint to set registration end + withdraw end (withdraw start is set to registration end).
+- Body (example):
+
+```json
+{
+  "registrationEndDate": "2026-01-20",
+  "withdrawEndDate": "2026-02-05"
+}
+```
+
+- Response: `ApiResponse<string>`
+
+---
+
+## Analytics
+
+All endpoints in this section require:
+
+- Auth: Yes
+- Role: Admin
+
+### `GET /api/analytics/dashboard`
+
+- Description: High-level dashboard overview (counts and status breakdowns).
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/enrollment-trends`
+
+- Description: Enrollment trend series for the last 30 days (chart-ready).
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/course-stats`
+
+- Description: Top course stats by enrollments.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/gpa-distribution`
+
+- Description: GPA distribution summary + chart data.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/credits-distribution`
+
+- Description: Completed credits distribution summary + chart data.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/instructor-stats`
+
+- Description: Instructor-level stats (sections and student counts).
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/recent-activity`
+
+- Description: Recent activity payload for admin dashboard.
+- Query: `limit` (default 20)
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/section-capacity`
+
+- Description: Capacity/utilization stats for sections.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/analytics/system-summary`
+
+- Description: Aggregated system summary for admin.
+- Body: None
+- Response: `ApiResponse<object>`
+
+---
+
+## Advising
+
+All endpoints in this section require:
+
+- Auth: Yes
+- Role: Instructor or Admin
+
+### `GET /api/advising/pending`
+
+- Description: Paginated list of pending enrollment requests.
+- Query: `search` (optional), `page` (default 1), `pageSize` (default 10)
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `POST /api/advising/{enrollmentId}/approve`
+
+- Description: Approve a pending enrollment request.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `POST /api/advising/{enrollmentId}/decline`
+
+- Description: Decline a pending enrollment request.
+- Body (example):
+
+```json
+{ "reason": "Prerequisite not met" }
+```
+
+- Response: `ApiResponse<string>`
+
+### `GET /api/advising/enrollments`
+
+- Description: Paginated enrollments list for advisors.
+- Query: `status` (optional), `search` (optional), `page` (default 1), `pageSize` (default 10)
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/advising/stats`
+
+- Description: Summary counts (pending/approved/declined/today).
+- Body: None
+- Response: `ApiResponse<object>`
+
+---
+
+## Academic Plans
+
+### `GET /api/academicplan/my-progress`
+
+- Auth: Yes
+- Role: Student
+- Description: Get the current student's academic progress.
+- Body: None
+- Response: `ApiResponse<StudentAcademicProgressDTO>`
+
+### `GET /api/academicplan/student-progress/{studentUserId}`
+
+- Auth: Yes
+- Role: Admin, Instructor
+- Description: Get academic progress for a student (by Identity user id).
+- Body: None
+- Response: `ApiResponse<StudentAcademicProgressDTO>`
+
+### `GET /api/academicplan`
+
+- Auth: Yes
+- Role: Admin, Instructor, Student
+- Description: List academic plans.
+- Body: None
+- Response: `ApiResponse<IEnumerable<ViewAcademicPlanSummaryDTO>>`
+
+### `GET /api/academicplan/{academicPlanId}`
+
+- Auth: Yes
+- Role: Admin, Instructor, Student
+- Description: Get an academic plan by id.
+- Body: None
+- Response: `ApiResponse<ViewAcademicPlanDTO>`
+
+### `GET /api/academicplan/{academicPlanId}/courses`
+
+- Auth: Yes
+- Role: Admin, Instructor, Student
+- Description: List courses in an academic plan.
+- Body: None
+- Response: `ApiResponse<IEnumerable<AcademicPlanCourseDTO>>`
+
+### `POST /api/academicplan`
+
+- Auth: Yes
+- Role: Admin
+- Description: Create an academic plan.
+- Body: `CreateAcademicPlanDTO`
+- Response: `ApiResponse<ViewAcademicPlanDTO>`
+
+### `PUT /api/academicplan`
+
+- Auth: Yes
+- Role: Admin
+- Description: Update an academic plan.
+- Body: `UpdateAcademicPlanDTO`
+- Response: `ApiResponse<ViewAcademicPlanDTO>`
+
+### `DELETE /api/academicplan/{academicPlanId}`
+
+- Auth: Yes
+- Role: Admin
+- Description: Delete an academic plan.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `POST /api/academicplan/add-course`
+
+- Auth: Yes
+- Role: Admin
+- Description: Add a course to an academic plan.
+- Body: `AddCourseToAcademicPlanDTO`
+- Response: `ApiResponse<AcademicPlanCourseDTO>`
+
+### `DELETE /api/academicplan/{academicPlanId}/courses/{courseId}`
+
+- Auth: Yes
+- Role: Admin
+- Description: Remove a course from an academic plan.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `POST /api/academicplan/assign-student`
+
+- Auth: Yes
+- Role: Admin
+- Description: Assign a student to an academic plan. Supports JSON body or query-string payload.
+- Body (example):
+
+```json
+{ "studentId": 123, "academicPlanId": "default" }
+```
+
+- Response: `ApiResponse<string>`
+
+---
+
+## Students
+
+All endpoints require Auth: Yes.
+
+### `POST /api/student`
+
+- Role: Admin
+- Description: Create a student profile.
+- Body: `CreateStudentDTO`
+- Response: `ApiResponse<ViewStudentProfileDTO>`
+
+### `GET /api/student?id={id}`
+
+- Role: Any authenticated user
+- Description: Get a student profile by numeric student id.
+- Body: None
+- Response: `ApiResponse<ViewStudentProfileDTO>`
+
+### `GET /api/student/me`
+
+- Role: Any authenticated user
+- Description: Get the current student's profile.
+- Body: None
+- Response: `ApiResponse<ViewStudentProfileDTO>`
+
+### `GET /api/student/students`
+
+- Role: Any authenticated user
+- Description: Filtered list of students.
+- Query: `GPA` (optional), `CompletedCredits` (optional), `AcademicPlanId` (optional)
+- Body: None
+- Response: `ApiResponse<List<ViewStudentProfileDTO>>`
+
+### `PUT /api/student/update-student`
+
+- Role: Admin, Student
+- Description: Update a student profile (admin path).
+- Body: `UpdateStudentProfileDTO`
+- Response: `ApiResponse<ViewStudentProfileDTO>`
+
+### `PUT /api/student`
+
+- Role: Student
+- Description: Change the current student's password (email is enforced from JWT).
+- Body: `ChangePasswordDTO`
+- Response: `ApiResponse<string>`
+
+---
+
+## Instructors
+
+All endpoints require Auth: Yes.
+
+### `POST /api/instructor`
+
+- Role: Admin
+- Description: Create an instructor profile.
+- Body: `CreateInstructorDTO`
+- Response: `ApiResponse<object>`
+
+### `GET /api/instructor`
+
+- Role: Admin, Student, Instructor
+- Description: List instructors.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/instructor/{id}`
+
+- Role: Admin, Student, Instructor
+- Description: Get instructor by id.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `PUT /api/instructor/{id}`
+
+- Role: Admin
+- Description: Update instructor fields.
+- Body: `UpdateInstructorDTO`
+- Response: `ApiResponse<object>`
+
+### `DELETE /api/instructor/{id}`
+
+- Role: Admin
+- Description: Delete instructor.
+- Body: None
+- Response: `ApiResponse<string>`
+
+### `GET /api/instructor/{id}/schedule`
+
+- Role: Admin, Instructor
+- Description: Get instructor schedule.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/instructor/my-schedule`
+
+- Role: Instructor
+- Description: Get schedule for the logged-in instructor.
+- Body: None
+- Response: `ApiResponse<object>`
+
+---
+
+## Rooms
+
+All endpoints require Auth: Yes.
+
+### `GET /api/room`
+
+- Role: Admin, Instructor, Student
+- Description: List rooms.
+- Body: None
+- Response: `ApiResponse<IEnumerable<ViewRoomDTO>>`
+
+### `GET /api/room/{id}`
+
+- Role: Admin, Instructor, Student
+- Description: Get room by id.
+- Body: None
+- Response: `ApiResponse<ViewRoomDTO>`
+
+### `POST /api/room`
+
+- Role: Admin
+- Description: Create a room (also auto-creates standard time slots for the week).
+- Body: `CreateRoomDTO`
+- Response: `ApiResponse<ViewRoomDTO>`
+
+### `PUT /api/room`
+
+- Role: Admin
+- Description: Update a room.
+- Body: `UpdateRoomDTO`
+- Response: `ApiResponse<ViewRoomDTO>`
+
+### `DELETE /api/room/{id}`
+
+- Role: Admin
+- Description: Delete a room.
+- Body: None
+- Response: `ApiResponse<string>`
+
+---
+
+## Time Slots
+
+All endpoints require Auth: Yes.
+
+### `GET /api/timeslot`
+
+- Role: Admin, Instructor, Student
+- Description: List time slots.
+- Body: None
+- Response: `ApiResponse<IEnumerable<ViewTimeSlotDTO>>`
+
+### `GET /api/timeslot/room/{roomId}`
+
+- Role: Admin, Instructor, Student
+- Description: List time slots for a room.
+- Body: None
+- Response: `ApiResponse<IEnumerable<ViewTimeSlotDTO>>`
+
+### `POST /api/timeslot`
+
+- Role: Admin
+- Description: Create a time slot.
+- Body: `CreateTimeSlotDTO`
+- Response: `ApiResponse<ViewTimeSlotDTO>`
+
+### `PUT /api/timeslot/{id}`
+
+- Role: Admin
+- Description: Update a time slot.
+- Body: `UpdateTimeSlotDTO` (must match URL id)
+- Response: `ApiResponse<ViewTimeSlotDTO>`
+
+### `DELETE /api/timeslot/{id}`
+
+- Role: Admin
+- Description: Delete a time slot.
+- Body: None
+- Response: `ApiResponse<string>`
+
+---
+
+## Schedule Slots
+
+All endpoints require Auth: Yes.
+
+### `POST /api/scheduleslot`
+
+- Role: Admin
+- Description: Create a schedule slot.
+- Body: `CreateScheduleSlotDTO`
+- Response: `ApiResponse<object>`
+
+### `GET /api/scheduleslot`
+
+- Role: Admin, Instructor, Student
+- Description: List schedule slots.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/scheduleslot/section/{sectionId}`
+
+- Role: Admin, Instructor, Student
+- Description: List schedule slots for a section.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/scheduleslot/instructor/{instructorId}`
+
+- Role: Admin, Instructor
+- Description: List schedule slots for an instructor.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `GET /api/scheduleslot/room/{roomId}`
+
+- Role: Admin, Instructor, Student
+- Description: List schedule slots for a room.
+- Body: None
+- Response: `ApiResponse<object>`
+
+### `DELETE /api/scheduleslot/{id}`
+
+- Role: Admin
+- Description: Delete a schedule slot.
+- Body: None
+- Response: `ApiResponse<string>`
+
+---
+
+## Smart Schedule
+
+### `POST /api/smartschedule/recommend`
+
+- Auth: Yes
+- Role: Student, Admin
+- Description: Recommend a non-conflicting set of sections for the selected course ids.
+- Body: `SmartScheduleRequestDTO`
+- Response: `ApiResponse<object>` (returns recommended sections, unscheduled courses, and explanation)
+
+---
+
+## Developer Tools
+
+These endpoints are intended for local development. They only work when the backend environment is `Development`.
+
+### `POST /api/devtools/seed`
+
+- Auth: No (but only available in Development)
+- Role: Development only
+- Description: Seed demo data (idempotent).
+- Body: None
+- Response: `ApiResponse<SeedResultDto>`
+
+### `POST /api/devtools/reset`
+
+- Auth: No (but only available in Development)
+- Role: Development only
+- Description: Reset DB (ensure deleted + migrate) then seed demo data.
+- Body: None
+- Response: `ApiResponse<SeedResultDto>`
+
+### `GET /api/devtools/users`
+
+- Auth: No (but only available in Development)
+- Role: Development only
+- Description: Get demo users list.
+- Body: None
+- Response: `ApiResponse<List<DemoUserInfoDto>>`
+
+### `POST /api/devtools/login-as`
+
+- Auth: No (but only available in Development)
+- Role: Development only
+- Description: Issue tokens for a demo user by email (dev helper).
+- Body (example):
+
+```json
+{ "email": "student@demo.local" }
+```
+
+- Response: `ApiResponse<LoginResponseDTO>`
 
 ---
 

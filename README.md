@@ -4,158 +4,120 @@ University Registration & Management System (students, instructors, admins) buil
 
 - Website: https://regman.app
 - Backend (ASP.NET Core `net8.0`): https://github.com/RegManApp/RegMan.Backend
-- Frontend (React/Vite): https://github.com/RegManApp/RegMan.Frontend
-- API docs: [docs/api.md](docs/api.md)
-- Repo presentation (GitHub + LinkedIn): [docs/repo-presentation.md](docs/repo-presentation.md)
 
-## Project Overview
+# RegMan Documentation (Source of Truth)
 
-RegMan models the end-to-end lifecycle of university registration:
+This repository is the **main documentation hub** for RegMan.
 
-- **Students** search courses, add sections to a cart, validate checkout, enroll, drop/withdraw within allowed academic windows, view GPA and transcript, book office hours, chat, and sync events.
-- **Instructors** manage office hours, view schedules, and communicate with students.
-- **Admins** manage catalog data, academic calendar configuration, approvals/workflows, and operational oversight.
+RegMan is a university registration & academic management system built as a full-stack application:
 
-Core problems RegMan addresses:
+- Frontend: React (Vite)
+- Backend: ASP.NET Core Web API (.NET 8)
+- Database: SQL Server (EF Core)
 
-- Centralizing registration rules (timeline gates, seat availability, approvals) **server-side**.
-- Clear separation of concerns so business rules live outside controllers and are testable.
-- “Product-grade” UX needs: consistent API envelope, validation responses, global error handling, realtime chat/notifications.
+Quick links:
 
-## Tech Stack
+- Live website: https://regman.app
+- Frontend repo: https://github.com/RegManApp/RegMan.Frontend
+- Backend repo: https://github.com/RegManApp/RegMan.Backend
 
-### Backend
+## Documentation Map
 
-- ASP.NET Core (`net8.0`)
-- Entity Framework Core (SQL Server)
-- ASP.NET Identity
-- JWT Authentication + role-based authorization (Admin/Student/Instructor)
-- SignalR (realtime chat + notifications)
-- Google Calendar OAuth integration (connect + token storage)
+- Architecture overview: [architecture.md](architecture.md)
+- API reference (grouped by domain): [api.md](api.md)
+- Frontend deep-dive: [frontend.md](frontend.md)
+- Backend deep-dive: [backend.md](backend.md)
+- Repo presentation (GitHub/recruiter polish): [repo-presentation.md](repo-presentation.md)
 
-### Frontend
-
-- React 18
-- Vite
-- Axios (centralized instance + interceptors)
-- Context API (auth/theme/realtime state)
-- i18n with `i18next` / `react-i18next` (EN/AR)
-- RTL support via `document.documentElement.dir` switching
-- SignalR client (`@microsoft/signalr`)
-
-## Architecture Overview
-
-High-level request flow:
+## System Architecture (High-Level)
 
 ```text
 React SPA
   ↓ HTTP (Axios) / WS (SignalR)
 ASP.NET Core API (Controllers)
-  ↓ calls
+  ↓
 Business Layer (Services)
-  ↓ via interfaces
-DAL (Unit of Work + Repositories)
+  ↓
+DAL (Repositories + Unit of Work)
   ↓
 SQL Server
 ```
 
-Why this structure:
+RegMan keeps critical rules server-side (registration timelines, seat capacity, approvals, grading → transcript/GPA sync) to keep data consistent across clients.
 
-- **Controllers stay thin**: request/response mapping, authorization, and orchestration only.
-- **Business Layer is the source of truth**: registration timelines, enrollment rules, seat checks, grade/GPA consistency.
-- **DAL isolates persistence**: repositories expose queryable access patterns; Unit of Work groups writes.
+## Run The Full System Locally
 
-Patterns used (as implemented in code):
+This section is the canonical setup guide. Other repos link here (no duplication).
 
-- **Service Layer** (e.g., `CourseService`, `EnrollmentService`, `OfficeHoursService`)
-- **Repository + Unit of Work** (`IUnitOfWork` + repository abstractions)
-- **DTO pattern** for API contracts and view models
-- **Dependency Injection** via `AddBusinessServices()` and `AddDataBaseLayer()`
-- **Middleware pattern** for global exception handling + consistent error envelope
-
-More detail:
-
-- [docs/architecture.md](docs/architecture.md)
-- [docs/backend.md](docs/backend.md)
-- [docs/frontend.md](docs/frontend.md)
-- [docs/repo-presentation.md](docs/repo-presentation.md)
-
-## Features (by role)
-
-### Student
-
-- Course browsing + registration flow (**Cart → Checkout → Enroll**)
-- Drop & Withdraw (enforced by academic timeline gates)
-- GPA & Transcript
-- Academic Calendar (timeline + user events)
-- Chat (realtime)
-- Office Hours booking
-- Google Calendar connect (OAuth) and sync-ready event surface
-
-### Instructor
-
-- Office hours management (create/batch/update/delete + booking workflow)
-- Student communication (chat)
-- Schedule visibility (teaching events)
-
-### Admin
-
-- Course & category management
-- Academic calendar setup (registration/withdraw windows)
-- Enrollment approvals / declines
-- Withdraw request review and actioning
-
-## Repository Layout
-
-This organization is split across multiple repositories:
-
-- Backend: https://github.com/RegManApp/RegMan.Backend
-- Frontend: https://github.com/RegManApp/RegMan.Frontend
-- Documentation (hub): https://github.com/RegManApp/RegMan.docs
-- Organization / meta: https://github.com/RegManApp/.github
-
-## Local Development
-
-### Prerequisites
-
-- .NET SDK 8
-- Node.js 18+ (recommended)
-- SQL Server (LocalDB or full SQL Server)
-
-### Backend
-
-The API expects a SQL Server connection string named `DefaultConnection`.
-
-Environment variables (Development):
-
-- `ConnectionStrings__DefaultConnection` (SQL Server)
-- `Jwt__Key` (>= 32 chars)
-- Optional (Google Calendar integration):
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
-  - `GOOGLE_REDIRECT_URI`
-
-Run:
+### 1) Clone repositories
 
 ```bash
-# from the RegMan.Backend repo root
-cd RegMan.Backend.API
-
-dotnet run
+git clone https://github.com/RegManApp/RegMan.Backend
+git clone https://github.com/RegManApp/RegMan.Frontend
 ```
 
-Notes:
+### 2) Prerequisites
 
-- The API runs EF migrations at startup (`Database.MigrateAsync()`), which keeps schema in sync.
-- Swagger UI is enabled: `GET /swagger`.
+- Git
+- .NET SDK 8
+- Node.js 18+ (recommended) + npm
+- SQL Server (LocalDB or full SQL Server)
 
-### Frontend
+### 3) Backend configuration (environment variables)
 
-Set API base URL:
+The API requires these environment variables at startup:
 
-- `VITE_API_BASE_URL` (e.g. `http://localhost:5240`)
+- `ConnectionStrings__DefaultConnection` (SQL Server connection string)
+- `Jwt__Key` (JWT signing key, **>= 32 characters**). The API will fail fast if missing/weak.
 
-Run:
+Optional (enables Google Calendar integration; otherwise it is disabled):
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+
+Example connection string for LocalDB (adjust as needed):
+
+```text
+Server=(localdb)\MSSQLLocalDB;Database=RegMan;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True
+```
+
+### 4) Run the backend
+
+```bash
+cd RegMan.Backend
+dotnet restore
+
+# Optional: apply migrations via EF CLI (the API also runs MigrateAsync() at startup)
+dotnet tool install --global dotnet-ef
+dotnet ef database update --project RegMan.Backend.DAL/RegMan.Backend.DAL.csproj --startup-project RegMan.Backend.API/RegMan.Backend.API.csproj
+
+dotnet run --project RegMan.Backend.API/RegMan.Backend.API.csproj
+```
+
+Useful URLs (defaults from launch settings):
+
+- Swagger UI: `https://localhost:7025/swagger` or `http://localhost:5236/swagger`
+- API base: `http://localhost:5236/api`
+- SignalR hubs: `/hubs/chat`, `/hubs/notifications`
+
+### 5) Frontend configuration (environment variables)
+
+The frontend uses Vite env vars:
+
+- `VITE_API_BASE_URL` (**required**) — should include the `/api` suffix, e.g. `http://localhost:5236/api`
+- `VITE_APP_NAME` (optional)
+
+In the frontend repo:
+
+```bash
+cd RegMan.Frontend
+copy .env.example .env.local
+```
+
+Then edit `.env.local` and set `VITE_API_BASE_URL` to match your backend URL.
+
+### 6) Run the frontend
 
 ```bash
 cd RegMan.Frontend
@@ -163,27 +125,13 @@ npm install
 npm run dev
 ```
 
-## API Documentation
+### Run order
 
-- Human-readable: [docs/api.md](docs/api.md)
-- Interactive: Swagger (`/swagger`) when running the API locally.
+1. Start the backend first
+2. Start the frontend after the backend is running
 
-## Frontend Documentation
+## Need deeper details?
 
-See [docs/frontend.md](docs/frontend.md) for:
-
-- Folder structure (pages vs components)
-- Auth/session persistence and role-based routing
-- Axios instance + error handling conventions
-- i18n language switching and RTL behavior
-- SignalR integration points
-
-## Backend Documentation
-
-See [docs/backend.md](docs/backend.md) for:
-
-- Startup pipeline (`Program.cs`)
-- Authentication & authorization
-- Global exception handling and response envelope
-- Migrations + seeding strategy
-- Why business rules are enforced server-side
+- Backend internals (auth/migrations/middleware): [backend.md](backend.md)
+- Frontend internals (routing/auth/axios/i18n): [frontend.md](frontend.md)
+- Endpoint reference (by domain): [api.md](api.md)
