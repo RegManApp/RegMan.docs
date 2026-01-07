@@ -70,6 +70,11 @@ The API requires these environment variables at startup:
 - `ConnectionStrings__DefaultConnection` (SQL Server connection string)
 - `Jwt__Key` (JWT signing key, **>= 32 characters**). The API will fail fast if missing/weak.
 
+Recommended (defaults exist in appsettings.json, but you should set explicitly in production):
+
+- `Jwt__Issuer`
+- `Jwt__Audience`
+
 Optional (enables Google Calendar integration; otherwise it is disabled):
 
 - `GOOGLE_CLIENT_ID`
@@ -107,6 +112,7 @@ The frontend uses Vite env vars:
 
 - `VITE_API_BASE_URL` (**required**) — should include the `/api` suffix, e.g. `http://localhost:5236/api`
 - `VITE_APP_NAME` (optional)
+- `VITE_APP_VERSION` (optional)
 
 In the frontend repo:
 

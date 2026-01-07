@@ -79,3 +79,48 @@ Back-end hub endpoints:
 
 - `/hubs/chat`
 - `/hubs/notifications`
+
+## Post-deploy Calendar Smoke Tests
+
+Use this checklist to verify the newly added calendar features through the UI after deployment.
+
+Prereqs
+
+- Backend deployed with DB migrations applied (including `20260107220559_AddCalendarEnhancements`).
+- Frontend deployed with `VITE_API_BASE_URL` pointing to the backend API base URL (must include `/api`).
+- If testing Google Calendar: valid production `Google.ClientId/ClientSecret/RedirectUri` configured.
+
+1. Calendar view (`/api/calendar/view`)
+
+- Login and open Calendar.
+- Verify the month loads without errors and displays events.
+- Switch month back/forward and verify events reload.
+
+2. Conflict detection (type + severity)
+
+- Find or create a scenario that should produce a conflict.
+- Verify the calendar day cell shows a conflict count badge.
+- Click the day and verify the conflict list displays the conflict message/type and severity.
+
+3. Calendar preferences persist & reload
+
+- Go to Settings → Calendar Preferences.
+- Change **Week starts on** and **Hide weekends**, then Save.
+- Refresh the page (or log out/in).
+- Verify Settings shows the saved values and Calendar reflects them (headers/grid).
+
+4. Reminder rules (save → apply → trigger)
+
+- Go to Settings → Reminder Rules.
+- Adjust a rule (e.g., set “Minutes before” to `1`) and Save.
+- Ensure you have an upcoming matching event within the next few minutes.
+- Wait and confirm an in-app notification is raised at the expected time.
+
+5. Google Calendar connect / disconnect / status
+
+- Go to Settings → Google Calendar Integration.
+- Connect and complete the Google consent flow; verify status shows connected + email.
+- Disconnect; verify status becomes disconnected.
+- Optionally reconnect to ensure the lifecycle works repeatedly.
+
+After these manual steps pass, the features can be considered production-ready.

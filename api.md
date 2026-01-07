@@ -642,6 +642,74 @@ All endpoints require:
 - Description: Convenience wrapper for next 7 days.
 - Response: `ApiResponse<object>`
 
+### `GET /api/calendar/view?startDate={date}&endDate={date}`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Unified role-aware calendar view (recommended endpoint for the calendar page). Returns events + conflict information.
+- Notes:
+  - Also accepts legacy query names `fromDate`/`toDate`.
+- Response: `ApiResponse<object>` (data includes `{ viewRole, dateRange, events, conflicts }`)
+
+### `GET /api/calendar/preferences`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Get the current user's calendar UI/preferences.
+- Response: `ApiResponse<object>`
+
+### `PUT /api/calendar/preferences`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Upsert the current user's calendar UI/preferences.
+- Response: `ApiResponse<object>`
+
+### `GET /api/notifications/reminder-rules`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Get in-app reminder rules (used by the scheduled reminder dispatcher).
+- Response: `ApiResponse<object>`
+
+### `PUT /api/notifications/reminder-rules`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Replace in-app reminder rules.
+- Response: `ApiResponse<object>`
+
+---
+
+## Google Calendar Integration
+
+All endpoints in this section require:
+
+- Auth: Yes (except the OAuth callback)
+- Role: Any authenticated user
+
+### `GET /api/integrations/google-calendar/status`
+
+- Description: Returns whether the current user is connected. Never returns tokens.
+- Response: `ApiResponse<object>` (data: `{ connected, email }`)
+
+### `GET /api/integrations/google-calendar/connect-url?returnUrl={relativePath}`
+
+- Description: Returns an authorization URL. Frontend should navigate the browser to the returned URL.
+- Security: `returnUrl` must be a local-relative path starting with `/`.
+- Response: `ApiResponse<object>` (data: `{ url }`)
+
+### `POST /api/integrations/google-calendar/disconnect`
+
+- Description: Disconnect current user (removes stored tokens and event mappings). Best-effort.
+- Response: `ApiResponse<string>`
+
+### `GET /api/integrations/google-calendar/callback`
+
+- Auth: No (Google redirects the browser)
+- Description: OAuth callback endpoint configured in Google Cloud Console.
+- Response: `text/plain` or redirect
+
 ---
 
 ## Chat
@@ -681,8 +749,24 @@ All endpoints require:
 
 - Auth: Yes
 - Role: Any authenticated user
-- Description: Conversation messages (paged).
+- Description: Conversation messages.
+- Notes:
+  - Supports page-based paging (`page`/`pageSize`) and cursor paging (`beforeMessageId` + `pageSize`).
 - Response: `ApiResponse<ViewConversationDTO>`
+
+### `POST /api/chat/conversations/{conversationId}/messages/{messageId}/delete-for-me`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Delete a message for the current user only.
+- Response: `ApiResponse<object>`
+
+### `POST /api/chat/conversations/{conversationId}/messages/{messageId}/delete-for-everyone`
+
+- Auth: Yes
+- Role: Any authenticated user
+- Description: Delete a message for everyone in the conversation (redacts content).
+- Response: `ApiResponse<object>`
 
 ### `POST /api/chat/conversations/{conversationId}/read`
 
@@ -703,8 +787,13 @@ SignalR hubs:
 
 - `GET/WS /hubs/chat`
 - Client events used in API flows:
+  - `ReceiveMessage`
   - `ConversationCreated`
   - `MessageRead`
+  - `UserTyping`
+  - `UserPresenceChanged`
+  - `MessageDeletedForMe`
+  - `MessageDeletedForEveryone`
 
 ---
 
