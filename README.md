@@ -27,6 +27,9 @@ Quick links:
 - API reference (grouped by domain): [api.md](api.md)
 - Frontend deep-dive: [frontend.md](frontend.md)
 - Backend deep-dive: [backend.md](backend.md)
+- Security audit summary: [security-audit.md](security-audit.md)
+- Audit logging coverage: [audit-logging-coverage.md](audit-logging-coverage.md)
+- Final sign-off report: [final-signoff.md](final-signoff.md)
 - Repo presentation (GitHub/recruiter polish): [repo-presentation.md](repo-presentation.md)
 
 ## System Architecture (High-Level)
